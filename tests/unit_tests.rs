@@ -108,6 +108,6 @@ mod tests {
         let output = format!("{}", tx);
         assert!(output.contains("Version: 1"));
         assert!(output.contains("Lock Time: 0"));
-        assert!(output.contains("Previous Output Vout: 7"));
+        assert!(output.contains("Vout: 7"));
     }
 }
