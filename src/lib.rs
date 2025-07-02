@@ -15,7 +15,6 @@ pub enum BitcoinError {
 
 impl CompactSize {
     pub fn new(value: u64) -> Self {
-
         CompactSize { value }
     }
 
@@ -84,7 +83,7 @@ impl Serialize for Txid {
     where
         S: serde::Serializer,
     {
-        let hex_string = hex::encode(self.0); 
+        let hex_string = hex::encode(self.0);
         serializer.serialize_str(&hex_string)
     }
 }
@@ -94,13 +93,13 @@ impl<'de> Deserialize<'de> for Txid {
     where
         D: serde::Deserializer<'de>,
     {
-        let hex_string = String::deserialize(deserializer)?; 
-        let decoded = hex::decode(&hex_string).map_err(serde::de::Error::custom)?; 
+        let hex_string = String::deserialize(deserializer)?;
+        let decoded = hex::decode(&hex_string).map_err(serde::de::Error::custom)?;
         if decoded.len() != 32 {
             return Err(serde::de::Error::custom("Invalid Txid length"));
         }
         let mut array = [0u8; 32];
-        array.copy_from_slice(&decoded); 
+        array.copy_from_slice(&decoded);
         Ok(Txid(array))
     }
 }
@@ -121,7 +120,7 @@ impl OutPoint {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.txid.0); 
+        bytes.extend_from_slice(&self.txid.0);
         bytes.extend_from_slice(&self.vout.to_le_bytes());
         bytes
     }
@@ -132,8 +131,8 @@ impl OutPoint {
         }
 
         let mut txid = [0u8; 32];
-        txid.copy_from_slice(&bytes[0..32]); 
-        let vout = u32::from_le_bytes([bytes[32], bytes[33], bytes[34], bytes[35]]); 
+        txid.copy_from_slice(&bytes[0..32]);
+        let vout = u32::from_le_bytes([bytes[32], bytes[33], bytes[34], bytes[35]]);
 
         Ok((
             OutPoint {
@@ -157,18 +156,18 @@ impl Script {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        let compact_size = CompactSize::new(self.bytes.len() as u64); 
-        bytes.extend_from_slice(&compact_size.to_bytes()); 
-        bytes.extend_from_slice(&self.bytes); 
+        let compact_size = CompactSize::new(self.bytes.len() as u64);
+        bytes.extend_from_slice(&compact_size.to_bytes());
+        bytes.extend_from_slice(&self.bytes);
         bytes
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<(Self, usize), BitcoinError> {
-        let (compact_size, prefix_size) = CompactSize::from_bytes(bytes)?; 
+        let (compact_size, prefix_size) = CompactSize::from_bytes(bytes)?;
         let script_length = compact_size.value as usize;
 
         if bytes.len() < prefix_size + script_length {
-            return Err(BitcoinError::InsufficientBytes); 
+            return Err(BitcoinError::InsufficientBytes);
         }
 
         let script_bytes = bytes[prefix_size..prefix_size + script_length].to_vec();
@@ -206,15 +205,15 @@ impl TransactionInput {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.previous_output.to_bytes()); 
-        bytes.extend_from_slice(&self.script_sig.to_bytes()); 
-        bytes.extend_from_slice(&self.sequence.to_le_bytes()); 
+        bytes.extend_from_slice(&self.previous_output.to_bytes());
+        bytes.extend_from_slice(&self.script_sig.to_bytes());
+        bytes.extend_from_slice(&self.sequence.to_le_bytes());
         bytes
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<(Self, usize), BitcoinError> {
-        let (previous_output, outpoint_size) = OutPoint::from_bytes(bytes)?; 
-        let (script_sig, script_size) = Script::from_bytes(&bytes[outpoint_size..])?; 
+        let (previous_output, outpoint_size) = OutPoint::from_bytes(bytes)?;
+        let (script_sig, script_size) = Script::from_bytes(&bytes[outpoint_size..])?;
 
         let sequence_start = outpoint_size + script_size;
         if bytes.len() < sequence_start + 4 {
@@ -257,22 +256,22 @@ impl BitcoinTransaction {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.version.to_le_bytes()); 
+        bytes.extend_from_slice(&self.version.to_le_bytes());
 
         let input_count = CompactSize::new(self.inputs.len() as u64);
-        bytes.extend_from_slice(&input_count.to_bytes()); 
+        bytes.extend_from_slice(&input_count.to_bytes());
 
         for input in &self.inputs {
-            bytes.extend_from_slice(&input.to_bytes()); 
+            bytes.extend_from_slice(&input.to_bytes());
         }
 
-        bytes.extend_from_slice(&self.lock_time.to_le_bytes()); 
+        bytes.extend_from_slice(&self.lock_time.to_le_bytes());
         bytes
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<(Self, usize), BitcoinError> {
         if bytes.len() < 4 {
-            return Err(BitcoinError::InsufficientBytes); 
+            return Err(BitcoinError::InsufficientBytes);
         }
 
         let version = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
